@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include "chessboard.h"
+#include "asset_manager.h"
 
 int main()
 {
@@ -10,11 +11,9 @@ int main()
     auto window = sf::RenderWindow(sf::VideoMode(windowSize), "Chess", sf::Style::Titlebar | sf::Style::Close);
     window.setFramerateLimit(60);
 
-    // sf::Texture texture("../../../assets/black/rook.png");
-    // sf::Sprite sprite(texture);
-    // sprite.setScale({SPRITE_SCALING, SPRITE_SCALING});
+    AssetManager manager;
 
-    ChessBoard board;
+    ChessBoard board(manager.GetBoardTexture(), manager.GetPieceTexture());
 
     while (window.isOpen())
     {
@@ -29,8 +28,6 @@ int main()
         window.clear();
         board.Draw(window);
         // All drawing must be done between board.Draw and display.
-
-        // window.draw(sprite);
         window.display();
     }
 }
