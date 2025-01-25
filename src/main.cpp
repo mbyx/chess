@@ -15,6 +15,9 @@ int main()
 
     ChessBoard board(manager.GetBoardTexture(), manager.GetPieceTexture());
 
+    bool pieceIsSelected = false;
+    sf::Vector2u selectedPiecePosition;
+
     while (window.isOpen())
     {
         while (const std::optional event = window.pollEvent())
@@ -22,6 +25,26 @@ int main()
             if (event->is<sf::Event::Closed>())
             {
                 window.close();
+            }
+
+            if (event->is<sf::Event::MouseButtonPressed>())
+            {
+                if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left))
+                {
+                    sf::Vector2i mousePosition = sf::Mouse::getPosition(window);
+                    sf::Vector2i boardPosition = mousePosition / (int)CELL_SIZE;
+                    auto &piece = board.GetPieceAt({(uint8_t)boardPosition.x, (uint8_t)boardPosition.y});
+                    if (piece.has_value())
+                    {
+                        pieceIsSelected = true;
+                        selectedPiecePosition = {(uint8_t)boardPosition.x, (uint8_t)boardPosition.y};
+                    }
+                    else
+                    {
+                        pieceIsSelected = false;
+                    }
+                }
+                std::cout << pieceIsSelected << std::endl;
             }
         }
 

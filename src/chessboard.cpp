@@ -60,3 +60,46 @@ void ChessBoard::Draw(sf::RenderWindow &window)
         }
     }
 }
+
+std::vector<ChessPiece> ChessBoard::GetPiecesByType(ChessPiece::PieceType type)
+{
+    std::vector<ChessPiece> pieces;
+
+    for (size_t row = 0; row != ROW_COUNT; ++row)
+    {
+        for (size_t column = 0; column != ROW_COUNT; ++column)
+        {
+            if (m_Pieces[row][column].has_value())
+            {
+                ChessPiece piece = m_Pieces[row][column].value();
+                if (piece.GetType() == type)
+                    pieces.push_back(piece);
+            }
+        }
+    }
+    return pieces;
+}
+
+std::vector<ChessPiece> ChessBoard::GetPiecesByColor(ChessPiece::PieceColor color)
+{
+    std::vector<ChessPiece> pieces;
+
+    for (size_t row = 0; row != ROW_COUNT; ++row)
+    {
+        for (size_t column = 0; column != ROW_COUNT; ++column)
+        {
+            if (m_Pieces[row][column].has_value())
+            {
+                ChessPiece piece = m_Pieces[row][column].value();
+                if (piece.GetColor() == color)
+                    pieces.push_back(piece);
+            }
+        }
+    }
+    return pieces;
+}
+
+std::optional<ChessPiece> &ChessBoard::GetPieceAt(sf::Vector2u position)
+{
+    return m_Pieces[position.y][position.x];
+}

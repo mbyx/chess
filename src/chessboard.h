@@ -12,8 +12,12 @@ public:
     ChessBoard(sf::Texture &texture, sf::Texture &pieceTexture);
 
     void Draw(sf::RenderWindow &window);
+    std::vector<ChessPiece> GetPiecesByType(ChessPiece::PieceType type);
+    std::vector<ChessPiece> GetPiecesByColor(ChessPiece::PieceColor color);
+    std::optional<ChessPiece> &GetPieceAt(sf::Vector2u position);
 
 private:
-    std::optional<ChessPiece> m_Pieces[ROW_COUNT][ROW_COUNT];
+    std::optional<ChessPiece>
+        m_Pieces[ROW_COUNT][ROW_COUNT];
     sf::Sprite m_Sprite;
 };
