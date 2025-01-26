@@ -1,6 +1,7 @@
 #include <SFML/Graphics.hpp>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #define SPRITE_SCALING 4u
 #define PIECE_SIZE 16u

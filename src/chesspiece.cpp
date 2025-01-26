@@ -1,4 +1,5 @@
 #include "chesspiece.h"
+#include <iostream>
 
 ChessPiece::ChessPiece(PieceType type, PieceColor color, sf::Texture &texture) : m_Type(type), m_Color(color), m_Sprite(texture)
 {
@@ -34,9 +35,31 @@ std::vector<Move> ChessPiece::GetAvailableMoves()
     switch (m_Type)
     {
     case PieceType::Pawn:
-        // weirdest one.
-        break;
+    {
+        Move move;
+        move.source = {(uint8_t)source.x, (uint8_t)source.y};
+        move.destination = {(uint8_t)(source.x), (uint8_t)(source.y + (m_Color == PieceColor::White ? -1 : 1))};
+        if (move.destination.x < ROW_COUNT && move.destination.y < ROW_COUNT)
+            moves.push_back(move);
+
+        move.source = {(uint8_t)source.x, (uint8_t)source.y};
+        move.destination = {(uint8_t)(source.x), (uint8_t)(source.y + (m_Color == PieceColor::White ? -2 : 2))};
+        if (move.destination.x < ROW_COUNT && move.destination.y < ROW_COUNT)
+            moves.push_back(move);
+
+        move.source = {(uint8_t)source.x, (uint8_t)source.y};
+        move.destination = {(uint8_t)(source.x + 1), (uint8_t)(source.y + (m_Color == PieceColor::White ? -1 : 1))};
+        if (move.destination.x < ROW_COUNT && move.destination.y < ROW_COUNT)
+            moves.push_back(move);
+
+        move.source = {(uint8_t)source.x, (uint8_t)source.y};
+        move.destination = {(uint8_t)(source.x - 1), (uint8_t)(source.y + (m_Color == PieceColor::White ? -1 : 1))};
+        if (move.destination.x < ROW_COUNT && move.destination.y < ROW_COUNT)
+            moves.push_back(move);
+    }
+    break;
     case PieceType::Rook:
+    {
         for (uint8_t column = 0; column != ROW_COUNT; ++column)
         {
             if (column != source.x)
@@ -57,12 +80,99 @@ std::vector<Move> ChessPiece::GetAvailableMoves()
                 moves.push_back(move);
             }
         }
-        break;
+    }
+    break;
     case PieceType::Bishop:
-        break;
+    {
+        uint8_t dist_x_end = ROW_COUNT - source.x - 1;
+        uint8_t dist_x_start = source.x;
+        uint8_t dist_y_end = ROW_COUNT - source.y - 1;
+        uint8_t dist_y_start = source.y;
+
+        uint8_t primary_axis_start = std::min(dist_x_start, dist_y_start);
+        uint8_t primary_axis_end = std::min(dist_x_end, dist_y_end);
+
+        for (int i = -primary_axis_start; i <= primary_axis_end; ++i)
+        {
+            if (i == 0)
+                continue;
+            Move move;
+            move.source = {(uint8_t)source.x,
+                           (uint8_t)source.y};
+            move.destination = {(uint8_t)(source.x + i), (uint8_t)(source.y + i)};
+            moves.push_back(move);
+        }
+
+        uint8_t secondary_axis_start = std::min(dist_x_start, dist_y_end);
+        uint8_t secondary_axis_end = std::min(dist_x_end, dist_y_start);
+
+        for (int i = -secondary_axis_start; i <= secondary_axis_end; ++i)
+        {
+            if (i == 0)
+                continue;
+            Move move;
+            move.source = {(uint8_t)source.x,
+                           (uint8_t)source.y};
+            move.destination = {(uint8_t)(source.x + i), (uint8_t)(source.y - i)};
+            moves.push_back(move);
+        }
+    }
+
+    break;
     case PieceType::Knight:
-        break;
+    {
+        Move move;
+        move.source = {(uint8_t)source.x,
+                       (uint8_t)source.y};
+        move.destination = {(uint8_t)(source.x + 2), (uint8_t)(source.y + 1)};
+        if (move.destination.x < ROW_COUNT && move.destination.y < ROW_COUNT)
+            moves.push_back(move);
+
+        move.source = {(uint8_t)source.x,
+                       (uint8_t)source.y};
+        move.destination = {(uint8_t)(source.x + 1), (uint8_t)(source.y + 2)};
+        if (move.destination.x < ROW_COUNT && move.destination.y < ROW_COUNT)
+            moves.push_back(move);
+
+        move.source = {(uint8_t)source.x,
+                       (uint8_t)source.y};
+        move.destination = {(uint8_t)(source.x - 2), (uint8_t)(source.y - 1)};
+        if (move.destination.x < ROW_COUNT && move.destination.y < ROW_COUNT)
+            moves.push_back(move);
+
+        move.source = {(uint8_t)source.x,
+                       (uint8_t)source.y};
+        move.destination = {(uint8_t)(source.x - 1), (uint8_t)(source.y - 2)};
+        if (move.destination.x < ROW_COUNT && move.destination.y < ROW_COUNT)
+            moves.push_back(move);
+
+        move.source = {(uint8_t)source.x,
+                       (uint8_t)source.y};
+        move.destination = {(uint8_t)(source.x - 2), (uint8_t)(source.y + 1)};
+        if (move.destination.x < ROW_COUNT && move.destination.y < ROW_COUNT)
+            moves.push_back(move);
+
+        move.source = {(uint8_t)source.x,
+                       (uint8_t)source.y};
+        move.destination = {(uint8_t)(source.x - 1), (uint8_t)(source.y + 2)};
+        if (move.destination.x < ROW_COUNT && move.destination.y < ROW_COUNT)
+            moves.push_back(move);
+
+        move.source = {(uint8_t)source.x,
+                       (uint8_t)source.y};
+        move.destination = {(uint8_t)(source.x + 2), (uint8_t)(source.y - 1)};
+        if (move.destination.x < ROW_COUNT && move.destination.y < ROW_COUNT)
+            moves.push_back(move);
+
+        move.source = {(uint8_t)source.x,
+                       (uint8_t)source.y};
+        move.destination = {(uint8_t)(source.x + 1), (uint8_t)(source.y - 2)};
+        if (move.destination.x < ROW_COUNT && move.destination.y < ROW_COUNT)
+            moves.push_back(move);
+    }
+    break;
     case PieceType::Queen:
+    {
         for (uint8_t column = 0; column != ROW_COUNT; ++column)
         {
             if (column != source.x)
@@ -83,9 +193,101 @@ std::vector<Move> ChessPiece::GetAvailableMoves()
                 moves.push_back(move);
             }
         }
-        break;
+
+        uint8_t dist_x_end = ROW_COUNT - source.x - 1;
+        uint8_t dist_x_start = source.x;
+        uint8_t dist_y_end = ROW_COUNT - source.y - 1;
+        uint8_t dist_y_start = source.y;
+
+        uint8_t primary_axis_start = std::min(dist_x_start, dist_y_start);
+        uint8_t primary_axis_end = std::min(dist_x_end, dist_y_end);
+
+        for (int i = -primary_axis_start; i <= primary_axis_end; ++i)
+        {
+            if (i == 0)
+                continue;
+            Move move;
+            move.source = {(uint8_t)source.x,
+                           (uint8_t)source.y};
+            move.destination = {(uint8_t)(source.x + i), (uint8_t)(source.y + i)};
+            moves.push_back(move);
+        }
+
+        uint8_t secondary_axis_start = std::min(dist_x_start, dist_y_end);
+        uint8_t secondary_axis_end = std::min(dist_x_end, dist_y_start);
+
+        for (int i = -secondary_axis_start; i <= secondary_axis_end; ++i)
+        {
+            if (i == 0)
+                continue;
+            Move move;
+            move.source = {(uint8_t)source.x,
+                           (uint8_t)source.y};
+            move.destination = {(uint8_t)(source.x + i), (uint8_t)(source.y - i)};
+            moves.push_back(move);
+        }
+    }
+    break;
     case PieceType::King:
-        break;
+    {
+        Move move;
+        move.source = {(uint8_t)source.x,
+                       (uint8_t)source.y};
+        move.destination = {(uint8_t)(source.x + 1),
+                            (uint8_t)(source.y + 0)};
+        if (move.destination.x < ROW_COUNT && move.destination.y < ROW_COUNT)
+            moves.push_back(move);
+
+        move.source = {(uint8_t)source.x,
+                       (uint8_t)source.y};
+        move.destination = {(uint8_t)(source.x + 0),
+                            (uint8_t)(source.y + 1)};
+        if (move.destination.x < ROW_COUNT && move.destination.y < ROW_COUNT)
+            moves.push_back(move);
+
+        move.source = {(uint8_t)source.x,
+                       (uint8_t)source.y};
+        move.destination = {(uint8_t)(source.x + 1),
+                            (uint8_t)(source.y + 1)};
+        if (move.destination.x < ROW_COUNT && move.destination.y < ROW_COUNT)
+            moves.push_back(move);
+
+        move.source = {(uint8_t)source.x,
+                       (uint8_t)source.y};
+        move.destination = {(uint8_t)(source.x - 1),
+                            (uint8_t)(source.y + 0)};
+        if (move.destination.x < ROW_COUNT && move.destination.y < ROW_COUNT)
+            moves.push_back(move);
+
+        move.source = {(uint8_t)source.x,
+                       (uint8_t)source.y};
+        move.destination = {(uint8_t)(source.x + 0),
+                            (uint8_t)(source.y - 1)};
+        if (move.destination.x < ROW_COUNT && move.destination.y < ROW_COUNT)
+            moves.push_back(move);
+
+        move.source = {(uint8_t)source.x,
+                       (uint8_t)source.y};
+        move.destination = {(uint8_t)(source.x - 1),
+                            (uint8_t)(source.y - 1)};
+        if (move.destination.x < ROW_COUNT && move.destination.y < ROW_COUNT)
+            moves.push_back(move);
+
+        move.source = {(uint8_t)source.x,
+                       (uint8_t)source.y};
+        move.destination = {(uint8_t)(source.x + 1),
+                            (uint8_t)(source.y - 1)};
+        if (move.destination.x < ROW_COUNT && move.destination.y < ROW_COUNT)
+            moves.push_back(move);
+
+        move.source = {(uint8_t)source.x,
+                       (uint8_t)source.y};
+        move.destination = {(uint8_t)(source.x - 1),
+                            (uint8_t)(source.y + 1)};
+        if (move.destination.x < ROW_COUNT && move.destination.y < ROW_COUNT)
+            moves.push_back(move);
+    }
+    break;
     }
     return moves;
 }

@@ -15,6 +15,7 @@ public:
     std::vector<ChessPiece> GetPiecesByType(ChessPiece::PieceType type);
     std::vector<ChessPiece> GetPiecesByColor(ChessPiece::PieceColor color);
     std::optional<ChessPiece> &GetPieceAt(sf::Vector2u position);
+    bool PerformMove(Move move);
 
 private:
     std::optional<ChessPiece>

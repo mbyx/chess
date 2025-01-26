@@ -103,3 +103,14 @@ std::optional<ChessPiece> &ChessBoard::GetPieceAt(sf::Vector2u position)
 {
     return m_Pieces[position.y][position.x];
 }
+
+bool ChessBoard::PerformMove(Move move)
+{
+    auto &piece = GetPieceAt(move.source);
+    piece->GetSprite()
+        .setPosition({(float)move.destination.x * CELL_SIZE, (float)move.destination.y * CELL_SIZE});
+    m_Pieces[move.destination.y][move.destination.x] = piece;
+    m_Pieces[move.source.y][move.source.x].reset();
+
+    return false;
+}
