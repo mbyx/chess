@@ -15,13 +15,14 @@ int main()
 
     ChessBoard board(manager.GetBoardTexture(), manager.GetPieceTexture());
 
+    ChessPiece::PieceColor currentPlayingColor = ChessPiece::PieceColor::White;
+
     bool pieceIsSelected = false;
     sf::Vector2u selectedPiecePosition;
     std::vector<sf::RectangleShape> movement_squares;
 
     while (window.isOpen())
     {
-        std::cout << pieceIsSelected << std::endl;
         while (const std::optional event = window.pollEvent())
         {
             if (event->is<sf::Event::Closed>())
@@ -47,13 +48,14 @@ int main()
                             if (move->destination == pos && pieceIsSelected)
                             {
                                 board.PerformMove(*move);
+                                currentPlayingColor = currentPlayingColor == ChessPiece::PieceColor::White ? ChessPiece::PieceColor::Black : ChessPiece::PieceColor::White;
                                 break;
                             }
                         }
                         pieceIsSelected = false;
                         movement_squares.clear();
                     }
-                    else if (piece.has_value())
+                    if (piece.has_value() && currentPlayingColor == piece->GetColor())
                     {
                         pieceIsSelected = true;
                         selectedPiecePosition = {(uint8_t)boardPosition.x, (uint8_t)boardPosition.y};
