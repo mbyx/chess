@@ -41,6 +41,7 @@ int main()
                     if (pieceIsSelected)
                     {
                         std::vector<Move> moves = board.GetPieceAt(selectedPiecePosition)->GetAvailableMoves();
+                        // Filter moves here, taking into account pining and stuff.
                         for (auto move = moves.begin(); move != moves.end(); ++move)
                         {
                             sf::Vector2u pos = {(uint8_t)boardPosition.x,
@@ -48,6 +49,7 @@ int main()
                             if (move->destination == pos && pieceIsSelected)
                             {
                                 board.PerformMove(*move);
+                                // Check for mates here.
                                 currentPlayingColor = currentPlayingColor == ChessPiece::PieceColor::White ? ChessPiece::PieceColor::Black : ChessPiece::PieceColor::White;
                                 break;
                             }

@@ -6,31 +6,7 @@ ChessBoard::ChessBoard(sf::Texture &boardTexture, sf::Texture &pieceTexture) : m
 {
     m_Sprite.setScale({SPRITE_SCALING, SPRITE_SCALING});
 
-    m_Pieces[0][0] = ChessPiece(ChessPiece::PieceType::Rook, ChessPiece::PieceColor::Black, pieceTexture);
-    m_Pieces[0][1] = ChessPiece(ChessPiece::PieceType::Knight, ChessPiece::PieceColor::Black, pieceTexture);
-    m_Pieces[0][2] = ChessPiece(ChessPiece::PieceType::Bishop, ChessPiece::PieceColor::Black, pieceTexture);
-    m_Pieces[0][3] = ChessPiece(ChessPiece::PieceType::Queen, ChessPiece::PieceColor::Black, pieceTexture);
-    m_Pieces[0][4] = ChessPiece(ChessPiece::PieceType::King, ChessPiece::PieceColor::Black, pieceTexture);
-    m_Pieces[0][5] = ChessPiece(ChessPiece::PieceType::Bishop, ChessPiece::PieceColor::Black, pieceTexture);
-    m_Pieces[0][6] = ChessPiece(ChessPiece::PieceType::Knight, ChessPiece::PieceColor::Black, pieceTexture);
-    m_Pieces[0][7] = ChessPiece(ChessPiece::PieceType::Rook, ChessPiece::PieceColor::Black, pieceTexture);
-    for (size_t column = 0; column != ROW_COUNT; ++column)
-    {
-        m_Pieces[1][column] = ChessPiece(ChessPiece::PieceType::Pawn, ChessPiece::PieceColor::Black, pieceTexture);
-    }
-
-    for (size_t column = 0; column != ROW_COUNT; ++column)
-    {
-        m_Pieces[6][column] = ChessPiece(ChessPiece::PieceType::Pawn, ChessPiece::PieceColor::White, pieceTexture);
-    }
-    m_Pieces[7][0] = ChessPiece(ChessPiece::PieceType::Rook, ChessPiece::PieceColor::White, pieceTexture);
-    m_Pieces[7][1] = ChessPiece(ChessPiece::PieceType::Knight, ChessPiece::PieceColor::White, pieceTexture);
-    m_Pieces[7][2] = ChessPiece(ChessPiece::PieceType::Bishop, ChessPiece::PieceColor::White, pieceTexture);
-    m_Pieces[7][3] = ChessPiece(ChessPiece::PieceType::Queen, ChessPiece::PieceColor::White, pieceTexture);
-    m_Pieces[7][4] = ChessPiece(ChessPiece::PieceType::King, ChessPiece::PieceColor::White, pieceTexture);
-    m_Pieces[7][5] = ChessPiece(ChessPiece::PieceType::Bishop, ChessPiece::PieceColor::White, pieceTexture);
-    m_Pieces[7][6] = ChessPiece(ChessPiece::PieceType::Knight, ChessPiece::PieceColor::White, pieceTexture);
-    m_Pieces[7][7] = ChessPiece(ChessPiece::PieceType::Rook, ChessPiece::PieceColor::White, pieceTexture);
+    ConstructFromFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR", pieceTexture);
 
     for (size_t row = 0; row != ROW_COUNT; ++row)
     {
@@ -41,6 +17,54 @@ ChessBoard::ChessBoard(sf::Texture &boardTexture, sf::Texture &pieceTexture) : m
             {
                 piece->GetSprite().setPosition({(float)column * (float)PIECE_SIZE * SPRITE_SCALING, (float)row * (float)PIECE_SIZE * SPRITE_SCALING});
             }
+        }
+    }
+}
+
+void ChessBoard::ConstructFromFEN(std::string fen, sf::Texture &pieceTexture)
+{
+    // For now we only parse the first field of FEN that defines the board layout.
+    uint8_t currentRow = 0;
+    uint8_t currentColumn = 0;
+    for (auto character = fen.begin(); character != fen.end(); ++character)
+    {
+        if (*character == '/')
+        {
+            currentRow++;
+            currentColumn = 0;
+        }
+        else if (std::isdigit(*character))
+        {
+            uint8_t space = *character - '0';
+            currentColumn += space;
+        }
+        else
+        {
+            ChessPiece ::PieceColor color = std::islower(*character) ? ChessPiece::PieceColor::Black : ChessPiece::PieceColor::White;
+            ChessPiece::PieceType type;
+            switch (std::tolower(*character))
+            {
+            case 'p':
+                type = ChessPiece::PieceType::Pawn;
+                break;
+            case 'r':
+                type = ChessPiece::PieceType::Rook;
+                break;
+            case 'n':
+                type = ChessPiece::PieceType::Knight;
+                break;
+            case 'b':
+                type = ChessPiece::PieceType::Bishop;
+                break;
+            case 'q':
+                type = ChessPiece::PieceType::Queen;
+                break;
+            case 'k':
+                type = ChessPiece::PieceType::King;
+                break;
+            }
+            m_Pieces[currentRow][currentColumn] = ChessPiece(type, color, pieceTexture);
+            currentColumn++;
         }
     }
 }

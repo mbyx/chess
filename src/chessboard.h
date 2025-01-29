@@ -1,5 +1,6 @@
 #include <SFML/Graphics.hpp>
 #include "chesspiece.h"
+#include <cctype>
 
 #define SPRITE_SCALING 4u
 #define PIECE_SIZE 16u
@@ -11,6 +12,7 @@ class ChessBoard
 public:
     ChessBoard(sf::Texture &texture, sf::Texture &pieceTexture);
 
+    void ConstructFromFEN(std::string fen, sf::Texture &pieceTexture);
     void Draw(sf::RenderWindow &window);
     std::vector<ChessPiece> GetPiecesByType(ChessPiece::PieceType type);
     std::vector<ChessPiece> GetPiecesByColor(ChessPiece::PieceColor color);
