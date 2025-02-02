@@ -21,6 +21,7 @@ ChessBoard::ChessBoard(sf::Texture &boardTexture, sf::Texture &pieceTexture) : m
     }
 }
 
+// https://www.chess.com/terms/fen-chess
 void ChessBoard::ConstructFromFEN(std::string fen, sf::Texture &pieceTexture)
 {
     // For now we only parse the first field of FEN that defines the board layout.
@@ -131,10 +132,24 @@ std::optional<ChessPiece> &ChessBoard::GetPieceAt(sf::Vector2u position)
 bool ChessBoard::PerformMove(Move move)
 {
     auto &piece = GetPieceAt(move.source);
+    piece->SetMoveCount(piece->GetMoveCount() + 1);
     piece->GetSprite()
         .setPosition({(float)move.destination.x * CELL_SIZE, (float)move.destination.y * CELL_SIZE});
+    m_LastTakenPiece = m_Pieces[move.destination.y][move.destination.x];
     m_Pieces[move.destination.y][move.destination.x] = piece;
     m_Pieces[move.source.y][move.source.x].reset();
 
     return false;
+}
+
+// Note: Cannot unperform more than once.
+void ChessBoard::UnPerformMove(Move move)
+{
+    auto &piece = GetPieceAt(move.destination);
+    piece->SetMoveCount(piece->GetMoveCount() - 1);
+    piece->GetSprite()
+        .setPosition({(float)move.source.x * CELL_SIZE, (float)move.source.y * CELL_SIZE});
+    m_Pieces[move.source.y][move.source.x] = piece;
+    m_Pieces[move.destination.y][move.destination.x] = m_LastTakenPiece;
+    m_LastTakenPiece.reset();
 }

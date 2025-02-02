@@ -60,9 +60,20 @@ public:
         return m_Color;
     }
 
+    int GetMoveCount()
+    {
+        return m_NumberOfMoves;
+    }
+
+    void SetMoveCount(int value)
+    {
+        m_NumberOfMoves = value;
+    }
+
 private:
     PieceType m_Type;
     PieceColor m_Color;
+    int m_NumberOfMoves = 0;
 
     sf::Vector2u m_TileCoords;
     sf::Sprite m_Sprite;

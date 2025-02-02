@@ -18,9 +18,11 @@ public:
     std::vector<ChessPiece> GetPiecesByColor(ChessPiece::PieceColor color);
     std::optional<ChessPiece> &GetPieceAt(sf::Vector2u position);
     bool PerformMove(Move move);
+    void UnPerformMove(Move move);
 
 private:
     std::optional<ChessPiece>
         m_Pieces[ROW_COUNT][ROW_COUNT];
+    std::optional<ChessPiece> m_LastTakenPiece;
     sf::Sprite m_Sprite;
 };
