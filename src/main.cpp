@@ -184,6 +184,43 @@ int main()
                         rect.setFillColor(sf::Color(172, 172, 0, 64));
                         movement_squares.push_back(rect);
                     }
+
+                    bool isMoveAvailable = false;
+                    auto pieces = board.GetPiecesByColor(currentPlayingColor);
+                    for (auto &piece = pieces.begin(); piece != pieces.end(); piece++)
+                    {
+                        auto pos2 = piece->GetSprite().getPosition();
+                        std::vector<Move> moves = GetFilteredMoves(currentPlayingColor, {(uint16_t)pos2.x / CELL_SIZE, (uint16_t)pos2.y / CELL_SIZE}, board);
+
+                        for (auto move = moves.begin(); move != moves.end(); ++move)
+                        {
+                            board.PerformMove(*move);
+                            bool pinned = false;
+                            auto opposingColor = currentPlayingColor == ChessPiece::PieceColor::White ? ChessPiece::PieceColor::Black : ChessPiece::PieceColor::White;
+                            auto pieces = board.GetPiecesByColor(opposingColor);
+                            for (auto &piece = pieces.begin(); piece != pieces.end(); piece++)
+                            {
+                                auto pos2 = piece->GetSprite().getPosition();
+                                auto filteredMoves = GetFilteredMoves(opposingColor, {(uint16_t)pos2.x / CELL_SIZE, (uint16_t)pos2.y / CELL_SIZE}, board);
+                                for (auto filteredMove = filteredMoves.begin(); filteredMove != filteredMoves.end(); filteredMove++)
+                                {
+                                    auto &takingPiece = board.GetPieceAt(filteredMove->destination);
+                                    if (takingPiece.has_value() && takingPiece->GetType() == ChessPiece::PieceType::King && takingPiece->GetColor() == currentPlayingColor)
+                                        pinned = true;
+                                }
+                            }
+                            board.UnPerformMove(*move);
+                            if (pinned)
+                                continue;
+
+                            isMoveAvailable = true;
+                        }
+                    }
+                    std::cout << currentPlayingColor << std::endl;
+                    if (!isMoveAvailable)
+                    {
+                        std::cout << "Checkmate!" << std::endl;
+                    }
                 }
             }
         }
