@@ -1,7 +1,7 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 
-#include "chessboard.h"
+#include "chessboard/chessboard.h"
 #include "asset_manager.h"
 
 std::vector<Move> GetFilteredMoves(ChessPiece::PieceColor currentPlayingColor, sf::Vector2u selectedPiecePosition, ChessBoard &board)
@@ -165,7 +165,7 @@ int main()
                                 for (auto filteredMove = filteredMoves.begin(); filteredMove != filteredMoves.end(); filteredMove++)
                                 {
                                     auto &takingPiece = board.GetPieceAt(filteredMove->destination);
-                                    if (takingPiece.has_value() && takingPiece->GetType() == ChessPiece::PieceType::King && takingPiece->GetColor() == currentPlayingColor)
+                                    if (takingPiece.has_value() && (takingPiece->GetType() == ChessPiece::PieceType::King && takingPiece->GetColor() == currentPlayingColor))
                                         pinned = true;
                                 }
                             }

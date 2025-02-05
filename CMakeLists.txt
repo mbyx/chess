@@ -12,6 +12,7 @@ FetchContent_Declare(SFML
     SYSTEM)
 FetchContent_MakeAvailable(SFML)
 
-add_executable(main src/main.cpp src/chessboard.cpp src/chesspiece.cpp src/asset_manager.cpp)
+add_executable(main src/main.cpp src/chessboard/chessboard.cpp src/chesspiece/chesspiece.cpp)
+
 target_compile_features(main PRIVATE cxx_std_17)
 target_link_libraries(main PRIVATE SFML::Graphics)

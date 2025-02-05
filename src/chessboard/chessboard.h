@@ -1,11 +1,7 @@
-#include <SFML/Graphics.hpp>
-#include "chesspiece.h"
-#include <cctype>
 
-#define SPRITE_SCALING 4u
-#define PIECE_SIZE 16u
-#define ROW_COUNT 8u
-#define CELL_SIZE (PIECE_SIZE * SPRITE_SCALING)
+#include <SFML/Graphics.hpp>
+
+#include "../chesspiece/chesspiece.h"
 
 class ChessBoard
 {
@@ -14,15 +10,16 @@ public:
 
     void ConstructFromFEN(std::string fen, sf::Texture &pieceTexture);
     void Draw(sf::RenderWindow &window);
+
     std::vector<ChessPiece> GetPiecesByType(ChessPiece::PieceType type);
     std::vector<ChessPiece> GetPiecesByColor(ChessPiece::PieceColor color);
     std::optional<ChessPiece> &GetPieceAt(sf::Vector2u position);
-    bool PerformMove(Move move);
+
+    void PerformMove(Move move);
     void UnPerformMove(Move move);
 
 private:
-    std::optional<ChessPiece>
-        m_Pieces[ROW_COUNT][ROW_COUNT];
+    std::optional<ChessPiece> m_Pieces[ROW_COUNT][ROW_COUNT];
     std::optional<ChessPiece> m_LastTakenPiece;
     sf::Sprite m_Sprite;
 };

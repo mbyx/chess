@@ -1,5 +1,5 @@
 #include <SFML/Graphics.hpp>
-#include <iostream>
+
 #include "chessboard.h"
 
 ChessBoard::ChessBoard(sf::Texture &boardTexture, sf::Texture &pieceTexture) : m_Sprite(boardTexture)
@@ -15,7 +15,9 @@ ChessBoard::ChessBoard(sf::Texture &boardTexture, sf::Texture &pieceTexture) : m
             auto &piece = m_Pieces[row][column];
             if (piece.has_value())
             {
-                piece->GetSprite().setPosition({(float)column * (float)PIECE_SIZE * SPRITE_SCALING, (float)row * (float)PIECE_SIZE * SPRITE_SCALING});
+                sf::Vector2f position = {static_cast<float>(column * PIECE_SIZE * SPRITE_SCALING),
+                                         static_cast<float>(row * PIECE_SIZE * SPRITE_SCALING)};
+                piece->GetSprite().setPosition(position);
             }
         }
     }
@@ -36,12 +38,15 @@ void ChessBoard::ConstructFromFEN(std::string fen, sf::Texture &pieceTexture)
         }
         else if (std::isdigit(*character))
         {
+            // Convert character digit to an integer.
             uint8_t space = *character - '0';
             currentColumn += space;
         }
         else
         {
-            ChessPiece ::PieceColor color = std::islower(*character) ? ChessPiece::PieceColor::Black : ChessPiece::PieceColor::White;
+            ChessPiece::PieceColor color = std::islower(*character) ? ChessPiece::PieceColor::Black
+                                                                    : ChessPiece::PieceColor::White;
+
             ChessPiece::PieceType type;
             switch (std::tolower(*character))
             {
@@ -64,6 +69,7 @@ void ChessBoard::ConstructFromFEN(std::string fen, sf::Texture &pieceTexture)
                 type = ChessPiece::PieceType::King;
                 break;
             }
+
             m_Pieces[currentRow][currentColumn] = ChessPiece(type, color, pieceTexture);
             currentColumn++;
         }
@@ -79,9 +85,7 @@ void ChessBoard::Draw(sf::RenderWindow &window)
         {
             std::optional<ChessPiece> piece = m_Pieces[row][column];
             if (piece.has_value())
-            {
                 piece.value().Draw(window);
-            }
         }
     }
 }
@@ -129,27 +133,31 @@ std::optional<ChessPiece> &ChessBoard::GetPieceAt(sf::Vector2u position)
     return m_Pieces[position.y][position.x];
 }
 
-bool ChessBoard::PerformMove(Move move)
+void ChessBoard::PerformMove(Move move)
 {
     auto &piece = GetPieceAt(move.source);
     piece->SetMoveCount(piece->GetMoveCount() + 1);
     piece->GetSprite()
-        .setPosition({(float)move.destination.x * CELL_SIZE, (float)move.destination.y * CELL_SIZE});
+        .setPosition({static_cast<float>(move.destination.x * CELL_SIZE), static_cast<float>(move.destination.y * CELL_SIZE)});
     m_LastTakenPiece = m_Pieces[move.destination.y][move.destination.x];
     m_Pieces[move.destination.y][move.destination.x] = piece;
     m_Pieces[move.source.y][move.source.x].reset();
-
-    return false;
 }
 
-// Note: Cannot unperform more than once.
 void ChessBoard::UnPerformMove(Move move)
 {
     auto &piece = GetPieceAt(move.destination);
     piece->SetMoveCount(piece->GetMoveCount() - 1);
     piece->GetSprite()
-        .setPosition({(float)move.source.x * CELL_SIZE, (float)move.source.y * CELL_SIZE});
+        .setPosition({static_cast<float>(move.source.x * CELL_SIZE), static_cast<float>(move.source.y * CELL_SIZE)});
     m_Pieces[move.source.y][move.source.x] = piece;
     m_Pieces[move.destination.y][move.destination.x] = m_LastTakenPiece;
+    // TODO: Allow unperforming more than one move.
+    // Right now this line assumes that no other move was made before this, which
+    // only works for one move. It isn't a problem as we only make one move before
+    // un moving.
+    // One way to potentially solve this would be to store a vector of taken pieces,
+    // sorted by recency, then the last element will be the last piece taken and can
+    // simply be popped.
     m_LastTakenPiece.reset();
 }
