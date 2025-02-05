@@ -1,7 +1,6 @@
 #include <SFML/Graphics.hpp>
 
 #include "chessboard.h"
-#include <iostream>
 
 ChessBoard::ChessBoard(sf::Texture &boardTexture, sf::Texture &pieceTexture) : m_Sprite(boardTexture)
 {
@@ -229,7 +228,7 @@ std::vector<Move> ChessBoard::GetLegalMoves(ChessPiece::PieceColor currentPlayin
         bool pinned = false;
         auto opposingColor = currentPlayingColor == ChessPiece::PieceColor::White ? ChessPiece::PieceColor::Black : ChessPiece::PieceColor::White;
         auto pieces = GetPiecesByColor(opposingColor);
-        for (auto &piece = pieces.begin(); piece != pieces.end(); piece++)
+        for (auto piece = pieces.begin(); piece != pieces.end(); piece++)
         {
             auto pos2 = piece->GetSprite().getPosition();
             auto pseudoLegalMoves = GetPseudoLegalMoves(opposingColor, {(uint16_t)pos2.x / CELL_SIZE, (uint16_t)pos2.y / CELL_SIZE});
