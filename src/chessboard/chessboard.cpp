@@ -1,6 +1,7 @@
 #include <SFML/Graphics.hpp>
 
 #include "chessboard.h"
+#include <iostream>
 
 ChessBoard::ChessBoard(sf::Texture &boardTexture, sf::Texture &pieceTexture) : m_Sprite(boardTexture)
 {
@@ -131,6 +132,135 @@ std::vector<ChessPiece> ChessBoard::GetPiecesByColor(ChessPiece::PieceColor colo
 std::optional<ChessPiece> &ChessBoard::GetPieceAt(sf::Vector2u position)
 {
     return m_Pieces[position.y][position.x];
+}
+
+std::vector<Move> ChessBoard::GetPseudoLegalMoves(ChessPiece::PieceColor currentPlayingColor, sf::Vector2u pieceAtPosition)
+{
+    std::vector<Move> moves = GetPieceAt(pieceAtPosition)->GetAvailableMoves();
+    std::vector<sf::Vector2u> blockedDirs;
+
+    // For each direction, we go across it until the end (farther than it actually, but we skip invalid ones).
+    // Until there is a piece we don't do anything, after the piece, we mark all squares after that to be blocking.
+    // Since this checks every direction regardless of piece, it is inefficient.
+    for (int i = -1; i <= 1; i++)
+    {
+        for (int j = -1; j <= 1; j++)
+        {
+            if (i == 0 && j == 0)
+                continue;
+
+            bool blocking = false;
+
+            for (int w = 1; w < ROW_COUNT; w++)
+            {
+                sf::Vector2u pos = {
+                    static_cast<uint8_t>(pieceAtPosition.x + w * i),
+                    static_cast<uint8_t>(pieceAtPosition.y + w * j)};
+
+                if (pos.x >= ROW_COUNT || pos.y >= ROW_COUNT)
+                    break;
+
+                if (blocking)
+                {
+                    blockedDirs.push_back(pos);
+                    continue;
+                }
+
+                auto piece = GetPieceAt(pos);
+                if (piece.has_value())
+                {
+                    if (piece->GetColor() == currentPlayingColor)
+                        blockedDirs.push_back(pos);
+                    blocking = true;
+                }
+            }
+        }
+    }
+
+    // We go through every move and check if that move is blocked, and if so, do not add it.
+    // On the other hand, we also need to filter our special cases. The knight can jump over
+    // other pieces, so all it needs to check is if it's jumping destination has an ally piece.
+    // The pawn, because of how it's been programmed also has the moves for taking left and right.
+    // So we simply filter them out if there isn't an enemy piece to the sides. We also only allow
+    // Moving two steps the first time it moves.
+    std::vector<Move> pseudoLegalMoves;
+    for (auto move = moves.begin(); move != moves.end(); ++move)
+    {
+
+        if (GetPieceAt(pieceAtPosition)->GetType() == ChessPiece::PieceType::Knight)
+        {
+            auto &piece = GetPieceAt(move->destination);
+            if (piece.has_value() && piece->GetColor() == currentPlayingColor)
+                continue;
+        }
+        if (GetPieceAt(pieceAtPosition)->GetType() == ChessPiece::PieceType::Pawn)
+        {
+            auto &destPiece = GetPieceAt(move->destination);
+            if (move->source.x != move->destination.x && !destPiece.has_value())
+                continue;
+            if (abs((int)(move->source.y - move->destination.y)) == 2 && GetPieceAt(pieceAtPosition)->GetMoveCount() >= 1)
+                continue;
+            if (move->source.x == move->destination.x && destPiece.has_value())
+                continue;
+        }
+        if (std::find(blockedDirs.begin(), blockedDirs.end(), move->destination) != blockedDirs.end())
+        {
+            continue;
+        }
+        pseudoLegalMoves.push_back(*move);
+    }
+
+    return pseudoLegalMoves;
+}
+
+std::vector<Move> ChessBoard::GetLegalMoves(ChessPiece::PieceColor currentPlayingColor, sf::Vector2u pieceAtPosition)
+{
+    // Here we basically get the moves of every piece of the current color, and try them out.
+    // Then we check if the opposing color has any future move that results in the king being taken.
+    // If so, then that move would be invalid for the current color. So we then undo that move.
+    // This is very slow, but because of the board size, it is not problematic.
+    std::vector<Move> legalMoves;
+
+    std::vector<Move> moves = GetPseudoLegalMoves(currentPlayingColor, pieceAtPosition);
+
+    for (auto move = moves.begin(); move != moves.end(); ++move)
+    {
+        PerformMove(*move);
+        bool pinned = false;
+        auto opposingColor = currentPlayingColor == ChessPiece::PieceColor::White ? ChessPiece::PieceColor::Black : ChessPiece::PieceColor::White;
+        auto pieces = GetPiecesByColor(opposingColor);
+        for (auto &piece = pieces.begin(); piece != pieces.end(); piece++)
+        {
+            auto pos2 = piece->GetSprite().getPosition();
+            auto pseudoLegalMoves = GetPseudoLegalMoves(opposingColor, {(uint16_t)pos2.x / CELL_SIZE, (uint16_t)pos2.y / CELL_SIZE});
+            for (auto pseudoLegalMove = pseudoLegalMoves.begin(); pseudoLegalMove != pseudoLegalMoves.end(); pseudoLegalMove++)
+            {
+                auto &takingPiece = GetPieceAt(pseudoLegalMove->destination);
+                if (takingPiece.has_value() && takingPiece->GetType() == ChessPiece::PieceType::King && takingPiece->GetColor() == currentPlayingColor)
+                    pinned = true;
+            }
+        }
+        UnPerformMove(*move);
+        if (pinned)
+            continue;
+
+        legalMoves.push_back(*move);
+    }
+    return legalMoves;
+}
+
+bool ChessBoard::IsInCheckMate(ChessPiece::PieceColor currentPlayingColor)
+{
+    auto pieces = GetPiecesByColor(currentPlayingColor);
+    int numberOfMoves = 0;
+    for (auto piece = pieces.begin(); piece != pieces.end(); ++piece)
+    {
+        auto spritePosition = piece->GetSprite().getPosition();
+        sf::Vector2u pieceAtPosition = {(uint16_t)spritePosition.x / CELL_SIZE,
+                                        (uint16_t)spritePosition.y / CELL_SIZE};
+        numberOfMoves += GetLegalMoves(currentPlayingColor, pieceAtPosition).size();
+    }
+    return numberOfMoves == 0;
 }
 
 void ChessBoard::PerformMove(Move move)

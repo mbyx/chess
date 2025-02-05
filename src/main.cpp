@@ -1,78 +1,9 @@
 #include <SFML/Graphics.hpp>
-#include <iostream>
 
 #include "chessboard/chessboard.h"
 #include "asset_manager.h"
 
-std::vector<Move> GetFilteredMoves(ChessPiece::PieceColor currentPlayingColor, sf::Vector2u selectedPiecePosition, ChessBoard &board)
-{
-    std::vector<Move> moves = board.GetPieceAt(selectedPiecePosition)->GetAvailableMoves();
-    std::vector<sf::Vector2u> blockedDirs;
-
-    for (int i = -1; i <= 1; i++)
-    {
-        for (int j = -1; j <= 1; j++)
-        {
-            if (i == 0 && j == 0)
-                continue;
-
-            bool blocking = false;
-
-            for (int w = 1; w < ROW_COUNT; w++)
-            {
-                sf::Vector2u pos = {
-                    static_cast<uint8_t>(selectedPiecePosition.x + w * i),
-                    static_cast<uint8_t>(selectedPiecePosition.y + w * j)};
-
-                if (pos.x >= ROW_COUNT || pos.y >= ROW_COUNT)
-                    break;
-
-                if (blocking)
-                {
-                    blockedDirs.push_back(pos);
-                    continue;
-                }
-
-                auto piece = board.GetPieceAt(pos);
-                if (piece.has_value())
-                {
-                    if (piece->GetColor() == currentPlayingColor)
-                        blockedDirs.push_back(pos);
-                    blocking = true;
-                }
-            }
-        }
-    }
-
-    std::vector<Move> filteredMoves;
-    for (auto move = moves.begin(); move != moves.end(); ++move)
-    {
-
-        if (board.GetPieceAt(selectedPiecePosition)->GetType() == ChessPiece::PieceType::Knight)
-        {
-            auto &piece = board.GetPieceAt(move->destination);
-            if (piece.has_value() && piece->GetColor() == currentPlayingColor)
-                continue;
-        }
-        if (board.GetPieceAt(selectedPiecePosition)->GetType() == ChessPiece::PieceType::Pawn)
-        {
-            auto &destPiece = board.GetPieceAt(move->destination);
-            if (move->source.x != move->destination.x && !destPiece.has_value())
-                continue;
-            if (abs((int)(move->source.y - move->destination.y)) == 2 && board.GetPieceAt(selectedPiecePosition)->GetMoveCount() >= 1)
-                continue;
-            if (move->source.x == move->destination.x && destPiece.has_value())
-                continue;
-        }
-        if (std::find(blockedDirs.begin(), blockedDirs.end(), move->destination) != blockedDirs.end())
-        {
-            continue;
-        }
-        filteredMoves.push_back(*move);
-    }
-
-    return filteredMoves;
-}
+// Currently pawn promotion, en passant, and castling are not implemented.
 
 int main()
 {
@@ -81,6 +12,7 @@ int main()
     auto window = sf::RenderWindow(sf::VideoMode(windowSize), "Chess", sf::Style::Titlebar | sf::Style::Close);
     window.setFramerateLimit(60);
 
+start:
     AssetManager manager;
 
     ChessBoard board(manager.GetBoardTexture(), manager.GetPieceTexture());
@@ -89,7 +21,15 @@ int main()
 
     bool pieceIsSelected = false;
     sf::Vector2u selectedPiecePosition;
-    std::vector<sf::RectangleShape> movement_squares;
+    std::vector<sf::RectangleShape> movementSquares;
+
+    sf::Text checkMateText(manager.GetFont());
+    checkMateText.setCharacterSize(48);
+    checkMateText.setFillColor(sf::Color::Green);
+    checkMateText.setOutlineThickness(2.0);
+    checkMateText.setStyle(sf::Text::Bold);
+    checkMateText.setPosition({windowSize.x / 2.0f, windowSize.y / 2.0f});
+    checkMateText.move({-100, -48});
 
     while (window.isOpen())
     {
@@ -99,127 +39,61 @@ int main()
             {
                 window.close();
             }
-
-            if (event->is<sf::Event::MouseButtonPressed>())
+            else if (event->is<sf::Event::KeyPressed>())
             {
-                if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left))
+                if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Q))
+                    window.close();
+                if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::R))
                 {
-                    sf::Vector2i mousePosition = sf::Mouse::getPosition(window);
-                    sf::Vector2i boardPosition = mousePosition / (int)CELL_SIZE;
-                    auto &piece = board.GetPieceAt({(uint8_t)boardPosition.x, (uint8_t)boardPosition.y});
-                    sf::Vector2u pos = {(uint8_t)boardPosition.x,
-                                        (uint8_t)boardPosition.y};
-                    if (pieceIsSelected)
-                    {
-                        std::vector<Move> moves = GetFilteredMoves(currentPlayingColor, selectedPiecePosition, board);
+                    // Yes, I know goto is bad and all but in this case it works better.
+                    goto start;
+                }
+            }
 
-                        for (auto move = moves.begin(); move != moves.end(); ++move)
+            if (event->is<sf::Event::MouseButtonPressed>() && sf::Mouse::isButtonPressed(sf::Mouse::Button::Left))
+            {
+                sf::Vector2i mousePosition = sf::Mouse::getPosition(window);
+                sf::Vector2i boardPosition = mousePosition / (int)CELL_SIZE;
+                sf::Vector2u squareClicked = {(uint8_t)boardPosition.x,
+                                              (uint8_t)boardPosition.y};
+                auto &piece = board.GetPieceAt(squareClicked);
+                if (pieceIsSelected)
+                {
+                    std::vector<Move> moves = board.GetLegalMoves(currentPlayingColor, selectedPiecePosition);
+
+                    for (auto move = moves.begin(); move != moves.end(); ++move)
+                    {
+                        if (move->destination == squareClicked && pieceIsSelected)
                         {
                             board.PerformMove(*move);
-                            bool pinned = false;
-                            auto opposingColor = currentPlayingColor == ChessPiece::PieceColor::White ? ChessPiece::PieceColor::Black : ChessPiece::PieceColor::White;
-                            auto pieces = board.GetPiecesByColor(opposingColor);
-                            for (auto &piece = pieces.begin(); piece != pieces.end(); piece++)
-                            {
-                                auto pos2 = piece->GetSprite().getPosition();
-                                auto filteredMoves = GetFilteredMoves(opposingColor, {(uint16_t)pos2.x / CELL_SIZE, (uint16_t)pos2.y / CELL_SIZE}, board);
-                                for (auto filteredMove = filteredMoves.begin(); filteredMove != filteredMoves.end(); filteredMove++)
-                                {
-                                    auto &takingPiece = board.GetPieceAt(filteredMove->destination);
-                                    if (takingPiece.has_value() && takingPiece->GetType() == ChessPiece::PieceType::King && takingPiece->GetColor() == currentPlayingColor)
-                                        pinned = true;
-                                }
-                            }
-                            board.UnPerformMove(*move);
-                            if (pinned)
-                                continue;
+                            currentPlayingColor = currentPlayingColor == ChessPiece::PieceColor::White
+                                                      ? ChessPiece::PieceColor::Black
+                                                      : ChessPiece::PieceColor::White;
 
-                            if (move->destination == pos && pieceIsSelected)
+                            if (board.IsInCheckMate(currentPlayingColor))
                             {
-                                board.PerformMove(*move);
-                                // Check for mates here.
-                                currentPlayingColor = currentPlayingColor == ChessPiece::PieceColor::White ? ChessPiece::PieceColor::Black : ChessPiece::PieceColor::White;
-                                break;
+                                checkMateText.setString("Checkmate!");
                             }
+
+                            break;
                         }
-                        pieceIsSelected = false;
-                        movement_squares.clear();
                     }
-                    if (piece.has_value() && currentPlayingColor == piece->GetColor())
+                    pieceIsSelected = false;
+                    movementSquares.clear();
+                }
+                if (piece.has_value() && currentPlayingColor == piece->GetColor())
+                {
+                    pieceIsSelected = true;
+                    selectedPiecePosition = {(uint8_t)boardPosition.x, (uint8_t)boardPosition.y};
+                    movementSquares.clear();
+
+                    std::vector<Move> moves = board.GetLegalMoves(currentPlayingColor, selectedPiecePosition);
+                    for (auto move = moves.begin(); move != moves.end(); ++move)
                     {
-                        pieceIsSelected = true;
-                        selectedPiecePosition = {(uint8_t)boardPosition.x, (uint8_t)boardPosition.y};
-                        movement_squares.clear();
-                        std::vector<Move> moves = GetFilteredMoves(currentPlayingColor, selectedPiecePosition, board);
-
-                        for (auto move = moves.begin(); move != moves.end(); ++move)
-                        {
-                            board.PerformMove(*move);
-                            bool pinned = false;
-                            auto opposingColor = currentPlayingColor == ChessPiece::PieceColor::White ? ChessPiece::PieceColor::Black : ChessPiece::PieceColor::White;
-                            auto pieces = board.GetPiecesByColor(opposingColor);
-                            for (auto &piece = pieces.begin(); piece != pieces.end(); piece++)
-                            {
-                                auto pos2 = piece->GetSprite().getPosition();
-                                auto filteredMoves = GetFilteredMoves(opposingColor, {(uint16_t)pos2.x / CELL_SIZE, (uint16_t)pos2.y / CELL_SIZE}, board);
-                                for (auto filteredMove = filteredMoves.begin(); filteredMove != filteredMoves.end(); filteredMove++)
-                                {
-                                    auto &takingPiece = board.GetPieceAt(filteredMove->destination);
-                                    if (takingPiece.has_value() && (takingPiece->GetType() == ChessPiece::PieceType::King && takingPiece->GetColor() == currentPlayingColor))
-                                        pinned = true;
-                                }
-                            }
-                            board.UnPerformMove(*move);
-                            if (pinned)
-                                continue;
-
-                            auto rect = sf::RectangleShape({CELL_SIZE, CELL_SIZE});
-                            rect.setPosition({(float)move->destination.x * CELL_SIZE, (float)move->destination.y * CELL_SIZE});
-                            rect.setFillColor(sf::Color(0, 172, 0, 64));
-                            movement_squares.push_back(rect);
-                        }
-                        // Selected piece highlight
                         auto rect = sf::RectangleShape({CELL_SIZE, CELL_SIZE});
-                        rect.setPosition({(float)selectedPiecePosition.x * CELL_SIZE, (float)selectedPiecePosition.y * CELL_SIZE});
-                        rect.setFillColor(sf::Color(172, 172, 0, 64));
-                        movement_squares.push_back(rect);
-                    }
-
-                    bool isMoveAvailable = false;
-                    auto pieces = board.GetPiecesByColor(currentPlayingColor);
-                    for (auto &piece = pieces.begin(); piece != pieces.end(); piece++)
-                    {
-                        auto pos2 = piece->GetSprite().getPosition();
-                        std::vector<Move> moves = GetFilteredMoves(currentPlayingColor, {(uint16_t)pos2.x / CELL_SIZE, (uint16_t)pos2.y / CELL_SIZE}, board);
-
-                        for (auto move = moves.begin(); move != moves.end(); ++move)
-                        {
-                            board.PerformMove(*move);
-                            bool pinned = false;
-                            auto opposingColor = currentPlayingColor == ChessPiece::PieceColor::White ? ChessPiece::PieceColor::Black : ChessPiece::PieceColor::White;
-                            auto pieces = board.GetPiecesByColor(opposingColor);
-                            for (auto &piece = pieces.begin(); piece != pieces.end(); piece++)
-                            {
-                                auto pos2 = piece->GetSprite().getPosition();
-                                auto filteredMoves = GetFilteredMoves(opposingColor, {(uint16_t)pos2.x / CELL_SIZE, (uint16_t)pos2.y / CELL_SIZE}, board);
-                                for (auto filteredMove = filteredMoves.begin(); filteredMove != filteredMoves.end(); filteredMove++)
-                                {
-                                    auto &takingPiece = board.GetPieceAt(filteredMove->destination);
-                                    if (takingPiece.has_value() && takingPiece->GetType() == ChessPiece::PieceType::King && takingPiece->GetColor() == currentPlayingColor)
-                                        pinned = true;
-                                }
-                            }
-                            board.UnPerformMove(*move);
-                            if (pinned)
-                                continue;
-
-                            isMoveAvailable = true;
-                        }
-                    }
-                    std::cout << currentPlayingColor << std::endl;
-                    if (!isMoveAvailable)
-                    {
-                        std::cout << "Checkmate!" << std::endl;
+                        rect.setPosition({(float)move->destination.x * CELL_SIZE, (float)move->destination.y * CELL_SIZE});
+                        rect.setFillColor(sf::Color(0, 172, 0, 64));
+                        movementSquares.push_back(rect);
                     }
                 }
             }
@@ -227,11 +101,22 @@ int main()
 
         window.clear();
         board.Draw(window);
-        for (auto rect = movement_squares.begin(); rect != movement_squares.end(); ++rect)
+        window.draw(checkMateText);
+        if (pieceIsSelected)
+        {
+            auto rect = sf::RectangleShape({CELL_SIZE, CELL_SIZE});
+            rect.setPosition(
+                {static_cast<float>(selectedPiecePosition.x * CELL_SIZE),
+                 static_cast<float>(selectedPiecePosition.y * CELL_SIZE)});
+            rect.setFillColor(sf::Color(172, 172, 0, 64));
+            window.draw(rect);
+        }
+
+        for (auto rect = movementSquares.begin(); rect != movementSquares.end(); ++rect)
         {
             window.draw(*rect);
         }
-        // All drawing must be done between board.Draw and display.
+
         window.display();
     }
 }

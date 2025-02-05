@@ -15,6 +15,11 @@ public:
     std::vector<ChessPiece> GetPiecesByColor(ChessPiece::PieceColor color);
     std::optional<ChessPiece> &GetPieceAt(sf::Vector2u position);
 
+    std::vector<Move> GetPseudoLegalMoves(ChessPiece::PieceColor currentPlayingColor, sf::Vector2u pieceAtPosition);
+    std::vector<Move> GetLegalMoves(ChessPiece::PieceColor currentPlayingColor, sf::Vector2u pieceAtPosition);
+
+    bool IsInCheckMate(ChessPiece::PieceColor currentPlayingColor);
+
     void PerformMove(Move move);
     void UnPerformMove(Move move);
 

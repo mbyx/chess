@@ -12,6 +12,9 @@ struct Move
     sf::Vector2u destination;
 };
 
+void AddBishopMoves(sf::Vector2f source, std::vector<Move> &moves);
+void AddRookMoves(sf::Vector2f source, std::vector<Move> &moves);
+
 class ChessPiece
 {
 public:
