@@ -1,3 +1,5 @@
+#pragma once
+
 #include <algorithm>
 
 #include <SFML/Graphics.hpp>
@@ -18,7 +20,6 @@ void AddRookMoves(sf::Vector2f source, std::vector<Move> &moves);
 class ChessPiece
 {
 public:
-    // NOTE: Order does matter as these are used as the index into a spritesheet.
     enum PieceType
     {
         Pawn,
@@ -29,7 +30,6 @@ public:
         Queen,
     };
 
-    // NOTE: Order does matter as these are used as the index into a spritesheet.
     enum PieceColor
     {
         White,

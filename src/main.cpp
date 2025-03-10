@@ -4,6 +4,7 @@
 #include "asset_manager.h"
 
 // Currently pawn promotion, en passant, and castling are not implemented.
+// No AI either.
 
 int main()
 {
@@ -43,6 +44,11 @@ start:
             {
                 if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Q))
                     window.close();
+                if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::U))
+                {
+                    board.UnPerformMove();
+                    checkMateText.setString("");
+                }
                 if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::R))
                 {
                     // Yes, I know goto is bad and all but in this case it works better.
@@ -73,6 +79,10 @@ start:
                             if (board.IsInCheckMate(currentPlayingColor))
                             {
                                 checkMateText.setString("Checkmate!");
+                            }
+                            else
+                            {
+                                checkMateText.setString("");
                             }
 
                             break;

@@ -1,3 +1,4 @@
+#pragma once
 
 #include <SFML/Graphics.hpp>
 
@@ -21,10 +22,12 @@ public:
     bool IsInCheckMate(ChessPiece::PieceColor currentPlayingColor);
 
     void PerformMove(Move move);
-    void UnPerformMove(Move move);
+    void UnPerformMove();
 
 private:
     std::optional<ChessPiece> m_Pieces[ROW_COUNT][ROW_COUNT];
-    std::optional<ChessPiece> m_LastTakenPiece;
+    // FILO Stack
+    std::vector<Move> m_PerformedMoves;
+    std::vector<std::optional<ChessPiece>> m_PiecesTaken;
     sf::Sprite m_Sprite;
 };

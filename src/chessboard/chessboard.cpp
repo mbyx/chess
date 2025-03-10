@@ -239,7 +239,7 @@ std::vector<Move> ChessBoard::GetLegalMoves(ChessPiece::PieceColor currentPlayin
                     pinned = true;
             }
         }
-        UnPerformMove(*move);
+        UnPerformMove();
         if (pinned)
             continue;
 
@@ -268,25 +268,41 @@ void ChessBoard::PerformMove(Move move)
     piece->SetMoveCount(piece->GetMoveCount() + 1);
     piece->GetSprite()
         .setPosition({static_cast<float>(move.destination.x * CELL_SIZE), static_cast<float>(move.destination.y * CELL_SIZE)});
-    m_LastTakenPiece = m_Pieces[move.destination.y][move.destination.x];
+
+    auto &takenPiece = m_Pieces[move.destination.y][move.destination.x];
+    m_PiecesTaken.push_back(takenPiece);
+
     m_Pieces[move.destination.y][move.destination.x] = piece;
     m_Pieces[move.source.y][move.source.x].reset();
+
+    m_PerformedMoves.push_back(move);
 }
 
-void ChessBoard::UnPerformMove(Move move)
+void ChessBoard::UnPerformMove()
 {
-    auto &piece = GetPieceAt(move.destination);
-    piece->SetMoveCount(piece->GetMoveCount() - 1);
-    piece->GetSprite()
-        .setPosition({static_cast<float>(move.source.x * CELL_SIZE), static_cast<float>(move.source.y * CELL_SIZE)});
-    m_Pieces[move.source.y][move.source.x] = piece;
-    m_Pieces[move.destination.y][move.destination.x] = m_LastTakenPiece;
-    // TODO: Allow unperforming more than one move.
-    // Right now this line assumes that no other move was made before this, which
-    // only works for one move. It isn't a problem as we only make one move before
-    // un moving.
-    // One way to potentially solve this would be to store a vector of taken pieces,
-    // sorted by recency, then the last element will be the last piece taken and can
-    // simply be popped.
-    m_LastTakenPiece.reset();
+    if (!m_PerformedMoves.empty())
+    {
+        Move move = m_PerformedMoves.back();
+        m_PerformedMoves.pop_back();
+
+        auto &piece = GetPieceAt(move.destination);
+        piece->SetMoveCount(piece->GetMoveCount() - 1);
+        piece->GetSprite()
+            .setPosition({static_cast<float>(move.source.x * CELL_SIZE), static_cast<float>(move.source.y * CELL_SIZE)});
+        m_Pieces[move.source.y][move.source.x] = piece;
+
+        if (!m_PiecesTaken.empty())
+        {
+            auto &lastTakenPiece = m_PiecesTaken.back();
+            m_PiecesTaken.pop_back();
+            if (lastTakenPiece.has_value())
+            {
+                m_Pieces[move.destination.y][move.destination.x] = lastTakenPiece.value();
+            }
+            else
+            {
+                m_Pieces[move.destination.y][move.destination.x].reset();
+            }
+        }
+    }
 }
